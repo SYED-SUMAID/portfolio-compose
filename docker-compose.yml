@@ -5,44 +5,48 @@ services:
       dockerfile: Dockerfile
     container_name: portfolio-web
     ports:
-      - "8080:80"
+      -"8080:80"
     environment:
       - PGHOST=portfolio-db-container
-      - PGUSER=${POSTGRES_USER}
-      - PGDATABASE=${POSTGRES_DB}
-      - PGPASSWORD=${POSTGRES_PASSWORD}
-      - PGPORT=5432
+      - PGUSER= ${PGUSER}
+      - PGDATABASE= ${PGDATABASE}
+      - PGPASSWORD= ${PGPASSWORD}
+      - PGPORT= ${PGPORT}
     volumes:
-      - ./src:/var/www/html
+      -./src:/var/www/html #Bind mount the src directory to the container's /var/www/html directory
     networks:
       - portfolio-network
     depends_on:
-      portfolio-db:
-        condition: service_healthy
+      - portfolio-db:
+          condition: service_healthy
     restart: unless-stopped
 
+
   portfolio-db:
-    image: postgres:15
+    image: postgres:latest
     container_name: portfolio-db-container
     environment:
-      - POSTGRES_USER=${POSTGRES_USER}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
-      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_USER=${PGUSER}
+      - POSTGRES_PASSWORD=${PGPASSWORD}
+      - POSTGRES_DB=${PGDATABASE}
     volumes:
-      - db-data:/var/lib/postgresql/data
-      - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - db-data:/var/lib/postgresql/data 
+      - - ./db-init.sql:/docker-entrypoint-initdb.d/init.sql #Persist the database data in a named volume
     networks:
       - portfolio-network
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      test: ["CMD-SHELL", "pg_isready -U ${PGUSER}"]
       interval: 10s
       timeout: 5s
-      retries: 5
+      retries: 5        
+  restart: 
+     unless-stopped
 
-volumes:
-  db-data:
-    driver: local
 
-networks:
-  portfolio-network:
-    driver: bridge
+  volumes:
+    db-data:
+      driver: local
+
+  networks:
+    portfolio-network:
+      driver: bridge    
